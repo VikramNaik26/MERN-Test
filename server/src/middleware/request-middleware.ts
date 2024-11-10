@@ -11,7 +11,7 @@ const getMessageFromJoiError = (error: Joi.ValidationError): string | undefined 
     return error.message
   }
   return error.details && error.details.length > 0 && error.details[0].message
-    ? `PATH: [${error.details[0].path}]  MESSAGE: ${error.details[0].message}` : undefined;
+    ? `PATH: [${error.details[0].path}]  MESSAGE: ${error.details[0].message}` : undefined
 }
 
 interface HandlerOptions {
@@ -22,10 +22,10 @@ interface HandlerOptions {
 }
 
 /**
- * This router wrapper catches any error from async await
- * and throws it to the default express error handler,
- * instead of crashing the app
+ * Enhanced request handler wrapper that properly handles authentication,
+ * validation, and error handling for Express routes
  * @param handler Request handler to check for error
+ * @param options Configuration options for validation and JWT auth
  */
 export const relogRequestHandler = (
   handler: RequestHandler,
@@ -37,49 +37,55 @@ export const relogRequestHandler = (
       message: req.url
     })
 
+    // JWT Authentication
     if (!options?.skipJwtAuth) {
       const token = req.headers['authorization']
-      if (token) {
-        // Using Promise-based jwt.verify instead of callback
-        try {
-          await new Promise((resolve, reject) => {
-            jwt.verify(
-              token.replace('Bearer ', '').replace('Bearer', ''),
-              process.env.SECRET ?? '',
-              (err, decoded) => {
-                if (err) reject(err)
-                else resolve(decoded)
-              }
-            )
-          })
-        } catch (err) {
-          logger.log({
-            level: 'info',
-            message: 'Token Validation Failed'
-          })
-          throw new UnauthorizedRequest()
-        }
-      } else {
+      if (!token) {
         logger.log({
           level: 'info',
           message: 'Auth token is not supplied'
         })
         throw new UnauthorizedRequest('Auth token is not supplied')
       }
-    }
 
-    if (options?.validation?.body) {
-      const { error } = options.validation.body.validate(req.body)
-      if (error != null) {
-        throw new BadRequest(getMessageFromJoiError(error))
+      try {
+        const decoded = await new Promise((resolve, reject) => {
+          jwt.verify(
+            token.replace(/^Bearer\s+/, ''),
+            process.env.SECRET ?? '',
+            (err, decoded) => {
+              if (err) reject(err)
+              else resolve(decoded)
+            }
+          )
+        })
+
+        // Optionally attach decoded token to request for later use
+        req.user = decoded
+      } catch (err) {
+        logger.log({
+          level: 'info',
+          message: 'Token Validation Failed'
+        })
+        throw new UnauthorizedRequest('Invalid or expired token')
       }
     }
 
+    // Request body validation
+    if (options?.validation?.body) {
+      const { error } = options.validation.body.validate(req.body)
+      if (error) {
+        throw new BadRequest(getMessageFromJoiError(error))
+      }
+    }
+      
+    // Handle the main request
     const result = handler(req, res, next)
-    if (result && result instanceof Promise) {
+    if (result instanceof Promise) {
       await result
     }
   } catch (err) {
+    // Logging in development
     if (process.env.NODE_ENV === 'development') {
       logger.log({
         level: 'error',
@@ -87,6 +93,19 @@ export const relogRequestHandler = (
         error: err
       })
     }
-    next(err)
+
+    // Ensure we're not calling next() if the response has already been sent
+    if (!res.headersSent) {
+      next(err)
+    }
+  }
+}
+
+// Type declaration for the decoded user information
+declare global {
+  namespace Express {
+    interface Request {
+      user?: any; 
+    }
   }
 }
