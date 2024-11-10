@@ -2,6 +2,8 @@ import { useState } from "react"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { AlertCircle, Loader2 } from "lucide-react"
+import { Link } from "react-router-dom"
+import { useNavigate } from 'react-router-dom'
 
 import {
   Form,
@@ -16,17 +18,90 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { LoginSchema, LoginFormValues } from "@/schemas"
-import { Link } from "react-router-dom"
+import { useToast } from "@/hooks/use-toast"
+import { ToastAction } from '@/components/ui/toast'
 
-interface LoginFormProps {
-  onLoginSuccess?: (data: LoginFormValues) => void
-  onLoginError?: (error: Error) => void
+interface LoginResponse {
+  token: string;
+  user: {
+    id: string;
+    username: string;
+    email?: string;
+    role?: string;
+  };
 }
 
-export const LoginForm: React.FC<LoginFormProps> = ({
-  onLoginSuccess,
-  onLoginError,
-}) => {
+
+export const LoginForm: React.FC = () => {
+  const { toast } = useToast()
+  const navigate = useNavigate()
+
+  const onLoginSuccess = (data: LoginFormValues & Partial<LoginResponse>) => {
+
+    try {
+      if (data.token) {
+        localStorage.setItem('authToken', data.token)
+      }
+
+      if (data.user) {
+        localStorage.setItem('userData', JSON.stringify(data.user.username ?? ""))
+      }
+
+      toast({
+        title: "Welcome back!",
+        description: `Successfully logged in as ${data.user?.username}`,
+        className: "bg-background border-border",
+        duration: 2000,
+      })
+
+      console.log("Login successful for user:", data.user?.username)
+
+      navigate('/dashboard', {
+        replace: true,
+        state: {
+          loggedIn: true,
+          timestamp: new Date().toISOString()
+        }
+      })
+
+    } catch (error) {
+      console.error("Error in login success handler:", error)
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "There was a problem completing your login. Please try again.",
+        duration: 3000,
+      })
+    }
+  }
+
+  const onLoginError = (error: Error) => {
+    let errorMessage = "Please try again later."
+
+    if (error.message.includes("credentials")) {
+      errorMessage = "Invalid username or password."
+    } else if (error.message.includes("network")) {
+      errorMessage = "Network error. Please check your connection."
+    } else if (error.message.includes("locked")) {
+      errorMessage = "Account temporarily locked. Please try again later."
+    }
+
+    toast({
+      variant: "destructive",
+      title: "Login Failed",
+      description: errorMessage,
+      action: (
+        <ToastAction altText="Try again">Try again</ToastAction>
+      ),
+      duration: 5000,
+    })
+
+    console.error("Login error:", {
+      message: error.message,
+      timestamp: new Date().toISOString(),
+      stack: error.stack
+    })
+  }
   const [isLoading, setIsLoading] = useState<boolean>(false)
   const [error, setError] = useState<string>("")
 
@@ -53,8 +128,9 @@ export const LoginForm: React.FC<LoginFormProps> = ({
 
       const data = await response.json()
 
-      if (data.sucess) {
-        onLoginSuccess?.(values)
+      if (data.success) {
+        console.log(data)
+        onLoginSuccess?.(data)
       } else {
         data.message && setError(data.message)
       }

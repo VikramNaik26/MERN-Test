@@ -44,6 +44,7 @@ const loginWrapper: RequestHandler = async (req, res) => {
       })
       return
     }
+    const { password, ...userWithoutPassword } = user.toObject();
 
     if (user.validPassword(password)) {
       const token = jwt.sign(
@@ -60,7 +61,7 @@ const loginWrapper: RequestHandler = async (req, res) => {
         success: true,
         message: 'Login successful',
         token,
-        uid: user._id
+        user: userWithoutPassword
       })
       return
     }

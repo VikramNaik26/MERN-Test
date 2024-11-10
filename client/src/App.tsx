@@ -3,7 +3,6 @@ import { Routes, Route, Outlet } from "react-router-dom"
 import { LoginForm } from '@/components/LoginForm'
 import { RegisterForm } from "@/components/RegisterForm";
 import Dashboard from "@/pages/Dashboard";
-import * as auth from "@/actions/auth";
 
 function App() {
   return (
@@ -13,19 +12,13 @@ function App() {
         <Route
           path="register"
           element={
-            <RegisterForm
-              onRegisterSuccess={auth.onRegisterSuccess}
-              onRegisterError={auth.onRegisterError}
-            />
+            <RegisterForm />
           }
         />
         <Route
           path="login"
           element={
-            <LoginForm
-              onLoginSuccess={auth.onLoginSuccess}
-              onLoginError={auth.onLoginError}
-            />
+            <LoginForm />
           }
         />
 

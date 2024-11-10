@@ -2,6 +2,8 @@ import { useState } from "react"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { AlertCircle, Loader2 } from "lucide-react"
+import { Link } from "react-router-dom"
+import { useNavigate } from 'react-router-dom'
 
 import {
   Form,
@@ -16,17 +18,50 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { RegisterSchema, RegisterFormValues } from "@/schemas"
-import { Link } from "react-router-dom"
+import { useToast } from "@/hooks/use-toast"
+import { ToastAction } from '@/components/ui/toast'
 
-interface RegisterFormProps {
-  onRegisterSuccess?: (data: RegisterFormValues) => void
-  onRegisterError?: (error: Error) => void
-}
+export const RegisterForm: React.FC = () => {
+  const { toast } = useToast()
+  const navigate = useNavigate()
 
-export const RegisterForm: React.FC<RegisterFormProps> = ({
-  onRegisterSuccess,
-  onRegisterError
-}) => {
+  const onRegisterSuccess = (data: RegisterFormValues) => {
+    toast({
+      title: "Registration Successful",
+      description: "Your account has been created successfully.",
+      className: "bg-background border-border",
+      action: (
+        <ToastAction altText="Go to login" onClick={() => navigate('/login')}>
+          Login now
+        </ToastAction>
+      ),
+      duration: 3000,
+    })
+
+    setTimeout(() => {
+      navigate('/login', {
+        state: {
+          username: data.username,
+          fromRegistration: true
+        }
+      })
+    }, 1500)
+  }
+
+  const onRegisterError = (error: Error) => {
+    toast({
+      variant: "destructive",
+      title: "Registration Failed",
+      description: error.message || "Please try again later.",
+      action: (
+        <ToastAction altText="Try again">Try again</ToastAction>
+      ),
+      duration: 5000,
+    })
+
+    console.error("Registration error:", error)
+  }
+
   const [isLoading, setIsLoading] = useState<boolean>(false)
   const [error, setError] = useState<string>("")
 
@@ -48,6 +83,8 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          "Accept": "application/json",
+          "X-Request-ID": crypto.randomUUID()
         },
         body: JSON.stringify(values),
       })
