@@ -44,8 +44,6 @@ const loginWrapper: RequestHandler = async (req, res) => {
       })
       return
     }
-    const { password, ...userWithoutPassword } = user.toObject();
-
     if (user.validPassword(password)) {
       const token = jwt.sign(
         {
@@ -57,6 +55,9 @@ const loginWrapper: RequestHandler = async (req, res) => {
           expiresIn: '12h'
         }
       )
+
+      const { password, ...userWithoutPassword } = user.toObject();
+
       res.status(200).json({
         success: true,
         message: 'Login successful',

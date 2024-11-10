@@ -22,15 +22,14 @@ import { useToast } from "@/hooks/use-toast"
 import { ToastAction } from '@/components/ui/toast'
 
 interface LoginResponse {
-  token: string;
+  token: string
   user: {
-    id: string;
-    username: string;
-    email?: string;
-    role?: string;
-  };
+    id: string
+    username: string
+    email?: string
+    role?: string
+  }
 }
-
 
 export const LoginForm: React.FC = () => {
   const { toast } = useToast()
@@ -44,7 +43,7 @@ export const LoginForm: React.FC = () => {
       }
 
       if (data.user) {
-        localStorage.setItem('userData', JSON.stringify(data.user.username ?? ""))
+        localStorage.setItem('userData', JSON.stringify(data.user))
       }
 
       toast({
@@ -129,7 +128,6 @@ export const LoginForm: React.FC = () => {
       const data = await response.json()
 
       if (data.success) {
-        console.log(data)
         onLoginSuccess?.(data)
       } else {
         data.message && setError(data.message)
