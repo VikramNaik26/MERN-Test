@@ -1,41 +1,36 @@
-import {
-  Document, Model, Schema, model
-} from 'mongoose'
+import { Document, Model, Schema, model } from 'mongoose'
 import { hashSync, genSaltSync, compareSync } from 'bcrypt'
 
+import { IEmployee, EmployeeSchema } from './Employee'
+
+// Define the IUser interface
 export interface IUser extends Document {
-  /** Email */
   username: string
-  /** Password */
   password: string
-  /** Created On */
   createdOn: Date
-  /** Created On */
   updatedOn: Date
+  employees: IEmployee[] // Use IEmployee type for employees
   encryptPassword: (password: string) => string
   validPassword: (password: string) => boolean
 }
 
-interface IUserModel extends Model<IUser> { }
+interface IUserModel extends Model<IUser> {}
 
-const schema = new Schema({
+// Define the User schema
+const UserSchema = new Schema<IUser>({
   username: { type: String, required: true, unique: true },
   password: { type: String, required: true },
-  createdOn: {
-    required: true,
-    type: Date
-  },
-  updatedOn: {
-    required: true,
-    type: Date,
-    default: Date.now
-  }
+  createdOn: { type: Date, required: true, default: Date.now },
+  updatedOn: { type: Date, required: true, default: Date.now },
+  employees: [EmployeeSchema], // Use EmployeeSchema for employees array
 })
 
-schema.methods.encryptPassword = (password: string) => hashSync(password, genSaltSync(10))
+// Add methods for password encryption and validation
+UserSchema.methods.encryptPassword = (password: string) => hashSync(password, genSaltSync(10))
 
-schema.methods.validPassword = function (password: string) {
+UserSchema.methods.validPassword = function (password: string) {
   return compareSync(password, this.password)
 }
 
-export const User: IUserModel = model<IUser, IUserModel>('User', schema)
+export const User = model<IUser, IUserModel>('User', UserSchema)
+
