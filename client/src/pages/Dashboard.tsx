@@ -2,8 +2,7 @@ import { useState } from "react"
 import { Loader2, LogOut, Plus, Users } from "lucide-react"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
-import { Link } from "react-router-dom"
-import { useNavigate } from 'react-router-dom'
+import { Link, useNavigate } from "react-router-dom"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -50,26 +49,12 @@ export default function Component() {
   const { toast } = useToast()
   const navigate = useNavigate()
 
-  const onEmpCreationSuccess = (data: EmployeeFormValues) => {
+  const onEmpCreationSuccess = () => {
     toast({
       title: "Employee successfully created",
       className: "bg-background border-border",
-      action: (
-        <ToastAction altText="Go to login" onClick={() => navigate('/login')}>
-          Login now
-        </ToastAction>
-      ),
       duration: 3000,
     })
-
-    setTimeout(() => {
-      navigate('/login', {
-        state: {
-          username: data.username,
-          fromRegistration: true
-        }
-      })
-    }, 1500)
   }
 
   const onEmployeeCreationError = (error: Error) => {
@@ -83,7 +68,7 @@ export default function Component() {
       duration: 5000,
     })
 
-    console.error("Registration error:", error)
+    console.error("Employee creation error:", error)
   }
 
   const username = authUtils.getCurrentUser()?.username
@@ -203,7 +188,7 @@ export default function Component() {
       }
 
       console.log('Employee created successfully:', data)
-      onEmpCreationSuccess(data)
+      onEmpCreationSuccess()
 
       form.reset()
       setShowCreateEmployee(false)
@@ -240,7 +225,9 @@ export default function Component() {
                 </Link>
               </NavigationMenuItem>
               <NavigationMenuItem>
-                Employee List
+                <Link to="/dashboard/employees">
+                  Employee List
+                </Link>
               </NavigationMenuItem>
             </NavigationMenuList>
           </NavigationMenu>
@@ -264,7 +251,7 @@ export default function Component() {
                   <Plus className="mr-2 h-4 w-4" />
                   Create Employee
                 </Button>
-                <Button variant="outline">
+                <Button variant="outline" onClick={() => navigate('/dashboard/employees')}>
                   <Users className="mr-2 h-4 w-4" />
                   Employee List
                 </Button>

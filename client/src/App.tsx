@@ -5,6 +5,7 @@ import { LoginForm } from '@/components/LoginForm'
 import { RegisterForm } from "@/components/RegisterForm"
 import Dashboard from "@/pages/Dashboard"
 import { authUtils } from "@/lib/authUtils"
+import Employees from "./pages/Employees"
 
 interface ProtectedRouteProps {
   children: React.ReactNode
@@ -74,6 +75,14 @@ function App() {
           element={
             <ProtectedRoute>
               <Dashboard />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="dashboard/employees"
+          element={
+            <ProtectedRoute>
+              <Employees />
             </ProtectedRoute>
           }
         />
