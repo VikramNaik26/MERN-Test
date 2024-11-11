@@ -99,10 +99,44 @@ export default function Employees() {
     loadEmployees()
   }, [])
 
-  console.log(employees)
-
   if (isLoading) return <div>Loading...</div>
   if (error) return <div>Error: {error}</div>
+
+  const deleteEmployee = async (id: string) => {
+    const authToken = localStorage.getItem("authToken")
+    if (!authToken) {
+      throw new Error('Authentication token not found')
+    }
+    console.log('Deleting employee:', id)
+
+    try {
+      const response = await fetch(`http://localhost:3000/api/${authUtils.getCurrentUser()?._id}/employees/${id}`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+          'authorization': `Bearer ${authToken}`,
+        },
+      })
+      console.log(response)
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Failed to delete employee')
+      }
+
+      const data: ApiResponse<null> = await response.json()
+      console.log(data)
+
+      if (!data.success) {
+        throw new Error('Failed to delete employee')
+      }
+
+      setEmployees(employees.filter((employee) => employee._id !== id))
+    } catch (error) {
+      console.error('Error deleting employee:', error)
+      throw error
+    }
+  }
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -122,7 +156,7 @@ export default function Employees() {
             </nav>
           </div>
           <div className="ml-auto flex items-center gap-4">
-            <span className="text-sm">Hukum Gupta</span>
+            <span className="text-sm">{authUtils.getCurrentUser()?.username}</span>
             <Button variant="ghost" size="icon" onClick={() => authUtils.logout()}>
               <LogOut className="h-4 w-4" />
               <span className="sr-only">Log out</span>
@@ -157,57 +191,61 @@ export default function Employees() {
           </div>
         </div>
 
-        <div className="rounded-md border">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="w-12">Unique Id</TableHead>
-                <TableHead>Image</TableHead>
-                <TableHead>Name</TableHead>
-                <TableHead>Email</TableHead>
-                <TableHead>Mobile No</TableHead>
-                <TableHead>Designation</TableHead>
-                <TableHead>Gender</TableHead>
-                <TableHead>Course</TableHead>
-                <TableHead className="text-center">Action</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {employees.map((employee) => (
-                <TableRow key={employee._id}>
-                  <TableCell>{employee._id}</TableCell>
-                  <TableCell>
-                    <Avatar>
-                      <AvatarImage
-                        src={`data:${employee.image.contentType};base64,${employee.image.data}`}
-                        alt={employee.name}
-                      />
-                      <AvatarFallback>{employee.name.substring(0, 2).toUpperCase()}</AvatarFallback>
-                    </Avatar>
-                  </TableCell>
-                  <TableCell>{employee.name}</TableCell>
-                  <TableCell>{employee.email}</TableCell>
-                  <TableCell>{employee.mobile}</TableCell>
-                  <TableCell>{employee.designation}</TableCell>
-                  <TableCell>{employee.gender === 'M' ? 'Male' : 'Female'}</TableCell>
-                  <TableCell>{employee.course.join(', ')}</TableCell>
-                  <TableCell className="text-right">
-                    <div className="flex justify-end gap-2">
-                      <Button variant="ghost" size="icon">
-                        <Edit className="h-4 w-4" />
-                        <span className="sr-only">Edit</span>
-                      </Button>
-                      <Button variant="ghost" size="icon">
-                        <Trash2 className="h-4 w-4" />
-                        <span className="sr-only">Delete</span>
-                      </Button>
-                    </div>
-                  </TableCell>
+        {employees.length === 0 ? (
+          <p className='w-[60dvw]'>No employees found.</p>
+        ) : (
+          <div className="rounded-md border">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="w-12">Unique Id</TableHead>
+                  <TableHead>Image</TableHead>
+                  <TableHead>Name</TableHead>
+                  <TableHead>Email</TableHead>
+                  <TableHead>Mobile No</TableHead>
+                  <TableHead>Designation</TableHead>
+                  <TableHead>Gender</TableHead>
+                  <TableHead>Course</TableHead>
+                  <TableHead className="text-center">Action</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
+              </TableHeader>
+              <TableBody>
+                {employees.map((employee) => (
+                  <TableRow key={employee._id}>
+                    <TableCell>{employee._id}</TableCell>
+                    <TableCell>
+                      <Avatar>
+                        <AvatarImage
+                          src={`data:${employee.image.contentType};base64,${employee.image.data}`}
+                          alt={employee.name}
+                        />
+                        <AvatarFallback>{employee.name.substring(0, 2).toUpperCase()}</AvatarFallback>
+                      </Avatar>
+                    </TableCell>
+                    <TableCell>{employee.name}</TableCell>
+                    <TableCell>{employee.email}</TableCell>
+                    <TableCell>{employee.mobile}</TableCell>
+                    <TableCell>{employee.designation}</TableCell>
+                    <TableCell>{employee.gender === 'M' ? 'Male' : 'Female'}</TableCell>
+                    <TableCell>{employee.course.join(', ')}</TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex justify-end gap-2">
+                        <Button variant="ghost" size="icon">
+                          <Edit className="h-4 w-4" />
+                          <span className="sr-only">Edit</span>
+                        </Button>
+                        <Button variant="ghost" size="icon" onClick={() => deleteEmployee(employee._id)}>
+                          <Trash2 className="h-4 w-4" />
+                          <span className="sr-only">Delete</span>
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        )}
       </main>
     </div>
   )

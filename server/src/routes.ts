@@ -25,6 +25,7 @@ const upload = multer({
 router.post('/login', AuthController.login)
 router.post('/register', AuthController.register)
 
-router.post('/:userId/createEmp',upload.single('image'), EmployeeController.create)
+router.post('/:userId/createEmp', upload.single('image'), EmployeeController.create)
 router.post('/:userId/checkEmail', EmployeeController.checkEmail)
 router.get('/:userId/employees', EmployeeController.getEmployees)
+router.delete('/:userId/employees/:employeeId', EmployeeController.deleteEmployeeController)
